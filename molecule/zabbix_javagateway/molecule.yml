@@ -1,9 +1,15 @@
 ---
+dependency:
+  name: galaxy
+  enabled: true
+  options:
+    requirements-file: molecule/default/collections.yml
+
 driver:
-  name: docker
+  name: default
 
 platforms:
-  - name: zabbix-server-${MY_MOLECULE_CONTAINER:-centos}
+  - name: zabbix-jgw-${MY_MOLECULE_VERSION:-v70}-${MY_MOLECULE_CONTAINER:-rockylinux8}
     image: geerlingguy/docker-${MY_MOLECULE_IMAGE:-rockylinux8}-ansible:latest
     privileged: true
     pre_build_image: true
@@ -11,25 +17,29 @@ platforms:
     networks:
       - name: zabbix
     volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
     groups:
-      - ${MY_MOLECULE_VERSION:-v64}
-      - ${MY_MOLECULE_INTERPRETER:-python3}
+      - ${MY_MOLECULE_VERSION:-v70}
+
 provisioner:
   name: ansible
+  playbooks:
+    create: ../default/create.docker.yml
+    destroy: ../default/destroy.docker.yml
   env:
-    ANSIBLE_COLLECTIONS_PATHS: $HOME/.ansible/collections/ansible_collections/community/zabbix
-    ANSIBLE_ROLES_PATH: $HOME/.ansible/collections/ansible_collections/community/zabbix/roles
+    # https://github.com/ansible/molecule/issues/4015#issuecomment-1680859724
+    ANSIBLE_ROLES_PATH: ../../roles
   inventory:
     group_vars:
-      python3:
-        ansible_python_interpreter: /usr/bin/python3
-      python:
-        ansible_python_interpreter: /usr/bin/python
+      all:
+        ansible_connection: community.docker.docker
+        zabbix_repo_apt_priority: 1
+        zabbix_repo_yum_gpg_check: 1
+      v70:
+        zabbix_javagateway_version: 7.0
       v64:
         zabbix_javagateway_version: 6.4
-      v62:
-        zabbix_javagateway_version: 6.2
       v60:
         zabbix_javagateway_version: 6.0
 

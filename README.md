@@ -12,11 +12,11 @@ Roles:
 
 - [Zabbix collection for Ansible](#zabbix-collection-for-ansible)
   * [Introduction](#introduction)
+  * [Communication](#communication)
   * [Included content](#included-content)
   * [Installation](#installation)
     + [Requirements](#requirements)
     + [Installing the Collection from Ansible Galaxy](#installing-the-collection-from-ansible-galaxy)
-    + [Upgrading collection](#upgrading-collection)
   * [Usage](#usage)
   * [Supported Zabbix versions](#supported-zabbix-versions)
   * [Collection life cycle and support](#collection-life-cycle-and-support)
@@ -28,6 +28,18 @@ Roles:
 This repo hosts the `community.zabbix` Ansible Collection.
 
 The collection includes a variety of Ansible content to help automate the management of resources in Zabbix.
+
+## Communication
+
+* Join the Ansible forum:
+  * [Get Help](https://forum.ansible.com/c/help/6): get help or help others.
+  * [Posts tagged with 'zabbix'](https://forum.ansible.com/tag/zabbix): subscribe to participate in collection-related conversations.
+  * [Social Spaces](https://forum.ansible.com/c/chat/4): gather and interact with fellow enthusiasts.
+  * [News & Announcements](https://forum.ansible.com/c/news/5): track project-wide announcements including social events.
+
+* The Ansible [Bullhorn newsletter](https://docs.ansible.com/ansible/devel/community/communication.html#the-bullhorn): used to announce releases and important changes.
+
+For more information about communication, see the [Ansible communication guide](https://docs.ansible.com/ansible/devel/community/communication.html).
 
 ## Included content
 
@@ -75,15 +87,21 @@ Click on the name of a plugin or module to view that content's documentation:
 
 ### Requirements
 
-Each component in this collection requires additional dependencies. Review components you are interested in by visiting links present in the [Included content](#included-content) section.
+Some of the components in this collection requires additional dependencies. Review components you are interested in by visiting links present in the [Included content](#included-content) section.
 
-This is especially important for some of the Zabbix roles that require you to **install additional standalone roles** from Ansible Galaxy.
+While the various roles and modules may work with earlier versions of Python and Ansible, they are only tested and maintained against Ansible Core >= 2.15 and python >= 3.9 
 
-For the majority of modules, however, you can get away with just:
+#### External Collections
 
-#### Ansible 2.10 and higher
+Additional collections may be required when running the various roles.
 
-With the release of Ansible 2.10, modules have been moved into collections.  With the exception of ansible.builtin modules, this means additonal collections must be installed in order to use modules such as seboolean (now ansible.posix.seboolean).  The following collections are now frequently required: `ansible.posix` and `community.general`.  Installing the collections:
+* `ansible.posix`:  Required if using SELinux portion of any roles
+* `ansible.general`:  Required if using SELinux portion of any roles
+* `ansible.netcommon`:  Required when using the agent role
+* `community.mysql`:  Required for the proxy or server roles if using MySQL
+* `community.postgresql`:  Required for the proxy or server roles if using PostgreSQL
+* `community.windows`:  Required for the agent role if installing on Windows
+
 
 ```bash
 ansible-galaxy collection install ansible.posix
@@ -104,16 +122,12 @@ You can also include it in a `requirements.yml` file along with other required c
 ---
 collections:
   - name: community.zabbix
-    version: 2.3.1
+    version: 3.2.0
   - name: ansible.posix
     version: 1.3.0
   - name: community.general
     version: 3.7.0
 ```
-
-### Upgrading collection
-
-Make sure to read [UPGRADE](docs/UPGRADE.md) document before installing newer version of this collection.
 
 ## Usage
 

@@ -39,9 +39,19 @@ plugins:
       name: zabbix_autoregister
       namespace: ''
       version_added: 1.6.0
+    zabbix_correlation:
+      description: Create/update/delete Zabbix correlation
+      name: zabbix_correlation
+      namespace: ''
+      version_added: 2.4.0
     zabbix_discovery_rule:
       description: Create/delete/update Zabbix discovery rules
       name: zabbix_discovery_rule
+      namespace: ''
+      version_added: null
+    zabbix_discoveryrule:
+      description: Create/delete Zabbix low-level discovery (LLD) rules
+      name: zabbix_discoveryrule
       namespace: ''
       version_added: null
     zabbix_globalmacro:
@@ -74,6 +84,11 @@ plugins:
       name: zabbix_host_events_info
       namespace: ''
       version_added: null
+    zabbix_host_events_update:
+      description: update the status of event(s).
+      name: zabbix_host_events_update
+      namespace: ''
+      version_added: null
     zabbix_host_info:
       description: Gather information about Zabbix host
       name: zabbix_host_info
@@ -89,6 +104,16 @@ plugins:
       name: zabbix_housekeeping
       namespace: ''
       version_added: 1.6.0
+    zabbix_item:
+      description: Create/delete Zabbix items
+      name: zabbix_item
+      namespace: ''
+      version_added: null
+    zabbix_itemprototype:
+      description: Create/delete Zabbix item prototypes
+      name: zabbix_itemprototype
+      namespace: ''
+      version_added: null
     zabbix_maintenance:
       description: Create Zabbix maintenance windows
       name: zabbix_maintenance
@@ -104,9 +129,19 @@ plugins:
       name: zabbix_mediatype
       namespace: ''
       version_added: null
+    zabbix_mfa:
+      description: Create/update/delete Zabbix MFA method
+      name: zabbix_mfa
+      namespace: ''
+      version_added: 3.1.0
     zabbix_proxy:
       description: Create/delete/get/update Zabbix proxies
       name: zabbix_proxy
+      namespace: ''
+      version_added: null
+    zabbix_proxy_group:
+      description: Create/update/delete Zabbix proxy group
+      name: zabbix_proxy_group
       namespace: ''
       version_added: null
     zabbix_proxy_info:
@@ -127,6 +162,11 @@ plugins:
     zabbix_service:
       description: Create/update/delete Zabbix service
       name: zabbix_service
+      namespace: ''
+      version_added: null
+    zabbix_service_info:
+      description: Gather information about Zabbix service
+      name: zabbix_service_info
       namespace: ''
       version_added: null
     zabbix_settings:
@@ -154,6 +194,16 @@ plugins:
       name: zabbix_token
       namespace: ''
       version_added: 2.1.0
+    zabbix_trigger:
+      description: Create/delete Zabbix triggers
+      name: zabbix_trigger
+      namespace: ''
+      version_added: null
+    zabbix_triggerprototype:
+      description: Create/delete Zabbix triggerprototypes
+      name: zabbix_triggerprototype
+      namespace: ''
+      version_added: null
     zabbix_user:
       description: Create/update/delete Zabbix users
       name: zabbix_user
@@ -189,4 +239,4 @@ plugins:
   strategy: {}
   test: {}
   vars: {}
-version: 2.3.1
+version: 3.2.0

@@ -21,18 +21,30 @@ jobs:
       matrix:
         zabbix_container:
           - version: "6.0"
-          - version: "6.2"
           - version: "6.4"
+          - version: "7.0"
         ansible:
           # https://docs.ansible.com/ansible/latest/reference_appendices/release_and_maintenance.html#ansible-core-changelogs
-          - stable-2.12
-          - stable-2.13
-          - stable-2.14
           - stable-2.15
           - stable-2.16
+          - stable-2.17
           - devel
         python:
+          - '3.9'
           - '3.10'
+          - '3.11'
+          - '3.12'
+        exclude:
+          - ansible: stable-2.15
+            python: '3.12'
+          - ansible: stable-2.16
+            python: '3.9'
+          - ansible: stable-2.17
+            python: '3.9'
+          - ansible: devel
+            python: '3.9'
+          - ansible: devel
+            python: '3.10'
 
     steps:
       - name: Check out code
@@ -56,7 +68,7 @@ jobs:
       # the Zabbix server. To do this we spin up a Docker container using the `matrix`
       # of version and ports specified earlier.
       - name: Zabbix container server provisioning
-        uses: isbang/compose-action@v1.5.0
+        uses: hoverkraft-tech/compose-action@v2.0.1
         with:
           compose-file: "./ansible_collections/community/zabbix/docker-compose.yml"
         env:
@@ -75,6 +87,6 @@ jobs:
         working-directory: ./ansible_collections/community/zabbix
 
       # See the repots at https://codecov.io/gh/ansible-collections/community.zabbix
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: false

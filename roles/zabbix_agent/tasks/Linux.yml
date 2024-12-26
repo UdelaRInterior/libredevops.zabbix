@@ -20,10 +20,6 @@
 - name: "Set first public ip address for zabbix_agent_ip"
   ansible.builtin.set_fact:
     zabbix_agent_ip: "{{ ansible_all_ipv4_addresses | ansible.netcommon.ipaddr('public') | first }}"
-    zabbix_agent_server: "{{ zabbix_agent_server_public_ip | default(zabbix_agent_server) }}"
-    zabbix_agent_serveractive: "{{ zabbix_agent_serveractive_public_ip | default(zabbix_agent_serveractive) }}"
-    zabbix_agent2_server: "{{ zabbix_agent_server_public_ip | default(zabbix_agent2_server) }}"
-    zabbix_agent2_serveractive: "{{ zabbix_agent_serveractive_public_ip | default(zabbix_agent2_serveractive) }}"
   when:
     - zabbix_agent_ip is not defined
     - total_private_ip_addresses is defined
@@ -55,7 +51,7 @@
     network_interface: ansible_{{ zabbix_agent_listeninterface }}
   when:
     - (zabbix_agent_listeninterface)
-    - not zabbix_agent_listenip
+    - zabbix_agent_listenip is undefined
   tags:
     - config
 
@@ -64,7 +60,7 @@
     zabbix_agent_listenip: "{{ hostvars[inventory_hostname][network_interface]['ipv4'].address | default('0.0.0.0') }}"
   when:
     - (zabbix_agent_listeninterface)
-    - not zabbix_agent_listenip
+    - zabbix_agent_listenip is undefined
   tags:
     - config
     - api
@@ -73,24 +69,25 @@
   ansible.builtin.set_fact:
     zabbix_agent_listenip: "0.0.0.0"
   when:
-    - not (zabbix_agent_listenip)
+    - zabbix_agent_listenip is undefined
   tags:
     - config
 
 - name: "Fail invalid specified agent_listenip"
   ansible.builtin.fail:
-    msg: "The agent_listenip does not exist"
+    msg: "The {{ item }} (agent_listenip) does not exist"
   when:
-    - zabbix_agent_listenip != '0.0.0.0'
-    - zabbix_agent_listenip != '127.0.0.1'
-    - (zabbix_agent_listenip not in ansible_all_ipv4_addresses)
+    - item != '0.0.0.0'
+    - item != '127.0.0.1'
+    - item not in ansible_all_ipv4_addresses
+  with_items:
+    "{{ zabbix_agent_listenip | split(',') }}"
   tags:
     - config
 
 - name: "Configure SELinux when enabled"
   ansible.builtin.include_tasks: selinux.yml
-  when:
-    - zabbix_selinux | bool
+  when: ansible_facts.selinux.status | default('disabled') == 'enabled'
 
 - name: "Adding zabbix group"
   ansible.builtin.group:
@@ -120,8 +117,8 @@
 
 - name: "Configure zabbix-agent"
   ansible.builtin.template:
-    src: "{{ 'zabbix_agentd.conf.j2' if not zabbix_agent2 else 'zabbix_agent2.conf.j2' }}"
-    dest: "/etc/zabbix/{{ zabbix_agent_conf if not zabbix_agent2 else zabbix_agent2_conf }}"
+    src: agent.conf.j2
+    dest: "/etc/zabbix/zabbix_agent{{ (zabbix_agent2 | bool) | ternary('2', 'd') }}.conf"
     owner: root
     group: root
     mode: "{{ zabbix_agent_conf_mode }}"
@@ -133,75 +130,16 @@
   tags:
     - config
 
-- name: "Create directory for PSK file if not exist."
+- name: "Create include dirs zabbix-agent"
   ansible.builtin.file:
-    path: "{{ zabbix_agent_tlspskfile | dirname }}"
-    mode: 0755
-    state: directory
-  become: true
-  when:
-    - zabbix_agent_tlspskfile is defined
-    - zabbix_agent_tlspskfile # https://github.com/ansible-collections/community.zabbix/issues/680
-    - not (zabbix_agent2 | bool)
-  tags:
-    - config
-
-- name: "Create directory for PSK file if not exist (zabbix-agent2)"
-  ansible.builtin.file:
-    path: "{{ zabbix_agent2_tlspskfile | dirname }}"
-    mode: 0755
-    state: directory
-  become: true
-  when:
-    - zabbix_agent2_tlspskfile is defined
-    - zabbix_agent2_tlspskfile # https://github.com/ansible-collections/community.zabbix/issues/680
-    - zabbix_agent2 | bool
-  tags:
-    - config
-
-- name: "Place TLS PSK File"
-  ansible.builtin.copy:
-    dest: "{{ zabbix_agent_tlspskfile }}"
-    content: "{{ zabbix_agent_tlspsk_secret }}"
-    owner: zabbix
-    group: zabbix
-    mode: 0400
-  become: true
-  when:
-    - zabbix_agent_tlspskfile is defined
-    - zabbix_agent_tlspskfile # https://github.com/ansible-collections/community.zabbix/issues/680
-    - zabbix_agent_tlspsk_secret is defined
-    - not (zabbix_agent2 | bool)
-  notify:
-    - restart zabbix-agent
-  tags:
-    - config
-
-- name: "Place TLS PSK File (zabbix-agent2)"
-  ansible.builtin.copy:
-    dest: "{{ zabbix_agent2_tlspskfile }}"
-    content: "{{ zabbix_agent2_tlspsk_secret }}"
-    owner: zabbix
-    group: zabbix
-    mode: 0400
-  become: true
-  when:
-    - zabbix_agent2_tlspskfile is defined
-    - zabbix_agent2_tlspskfile # https://github.com/ansible-collections/community.zabbix/issues/680
-    - zabbix_agent2_tlspsk_secret is defined
-    - zabbix_agent2 | bool
-  notify:
-    - restart zabbix-agent
-  tags:
-    - config
-
-- name: "Create include dir zabbix-agent"
-  ansible.builtin.file:
-    path: "{{ zabbix_agent_include if not zabbix_agent2 else zabbix_agent2_include }}"
+    path: "{{ include_dir }}"
     owner: root
     group: zabbix
-    mode: "{{ zabbix_agent_include_mode if not zabbix_agent2 else zabbix_agent2_include_mode }}"
+    mode: "{{ zabbix_agent_include_mode }}"
     state: directory
+  loop: "{{ [zabbix_agent_include_dir] if zabbix_agent_include_dir is string else zabbix_agent_include_dir }}"
+  loop_control:
+    loop_var: 'include_dir'
   become: true
   tags:
     - config
@@ -234,6 +172,8 @@
     owner: root
     group: zabbix
   become: true
-  when: zabbix_agent_chassis | bool
+  when:
+    - zabbix_agent_chassis is defined
+    - zabbix_agent_chassis | bool
   tags:
     - config
