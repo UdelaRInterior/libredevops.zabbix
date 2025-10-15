@@ -5,8 +5,8 @@
   ansible.builtin.package:
     name: "{{ _zabbix_proxy_sqlite3_dependencies }}"
   environment:
-    http_proxy: "{{ zabbix_http_proxy | default(None) | default(omit) }}"
-    https_proxy: "{{ zabbix_https_proxy | default(None) | default(omit) }}"
+    http_proxy: "{{ zabbix_http_proxy | default('') }}"
+    https_proxy: "{{ zabbix_https_proxy | default('') }}"
   become: true
   register: _zabbix_proxy_sqlite3_packages_installed
   until: _zabbix_proxy_sqlite3_packages_installed is succeeded
@@ -44,13 +44,13 @@
       become_user: "{{ zabbix_os_user }}"
       ansible.builtin.shell: |
         set -euxo pipefail
-        sqlite3 {{ zabbix_proxy_dbname }} < /usr/share/zabbix-sql-scripts/sqlite3/proxy.sql
+        sqlite3 {{ zabbix_proxy_dbname }} < {{ zabbix_proxy_database_file_dir }}/sqlite3/proxy.sql
       args:
         creates: "{{ zabbix_proxy_dbname }}"
         executable: /bin/bash
 
     - name: "Sqlite3 | Fix zabbix db file permission (SELinux)"
-      when: ansible_selinux.status == "enabled"
+      when: ansible_facts.selinux.status == "enabled"
       ansible.builtin.file:
         state: file
         path: "{{ zabbix_proxy_dbname }}"

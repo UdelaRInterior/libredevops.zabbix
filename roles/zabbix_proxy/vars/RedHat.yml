@@ -1,11 +1,15 @@
 zabbix_valid_proxy_versions:
+  "10":
+    - 7.4
   "9":
+    - 7.4
+    - 7.2
     - 7.0
-    - 6.4
     - 6.0
   "8":
+    - 7.4
+    - 7.2
     - 7.0
-    - 6.4
     - 6.0
 
 _zabbix_proxy_pgsql_dependencies:
@@ -13,29 +17,11 @@ _zabbix_proxy_pgsql_dependencies:
   - python3-psycopg2
 
 _zabbix_proxy_mysql_dependencies:
-  "9":
-    - "{{ zabbix_proxy_install_database_client | ternary('mysql', '') }}"
-    - python3-PyMySQL
-  "8":
-    - "{{ zabbix_proxy_install_database_client | ternary('mysql', '') }}"
-    - python3-PyMySQL
+  - "{{ zabbix_proxy_install_database_client | ternary(_zabbix_mysql_binary_name, '') }}"
+  - python3-PyMySQL
 
 _zabbix_proxy_sqlite3_dependencies:
   - sqlite
-
-selinux_pkgs:
-  "9":
-    - policycoreutils
-    - checkpolicy
-    - python3-libsemanage
-  "8":
-    - policycoreutils
-    - checkpolicy
-    - python3-libsemanage
-  "7":
-    - policycoreutils-python
-    - libsemanage-python
-    - checkpolicy
 
 _zabbix_proxy_fping6location: /usr/sbin/fping6
 _zabbix_proxy_fpinglocation: /usr/sbin/fping
@@ -46,3 +32,5 @@ _zabbix_proxy_packages:
 
 _zabbix_proxy_disable_repo:
   - epel
+
+_zabbix_mysql_binary_name: "{{ (ansible_facts['distribution_major_version'] != '10') | ternary( 'mysql', 'mysql8.4') }}"

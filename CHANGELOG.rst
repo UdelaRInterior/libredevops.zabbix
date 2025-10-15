@@ -4,6 +4,161 @@ community.zabbix Release Notes
 
 .. contents:: Topics
 
+v4.1.1
+======
+
+Minor Changes
+-------------
+
+- repo role - Added proxy support when downloading RedHat GPG key.
+- repo role - Added support for `zabbix_repo_deb_schema`
+- repo role - defaulting `zabbix_repo_apt_priority` to 1001
+- repo role - defaulting `zabbix_repo_version` to 7.4
+- repo role - defaulting `zabbix_repo_yum_gpgcheck` to 1
+- roles/agent, check to see if zabbix_agent_version_long is already supplied
+- roles/agent, swap uri with win_uri
+- server role - fixing zabbix_repo_package to repo role
+- zabbix_agent - Removed zabbix_win_install_dir variable and replaced with zabbix_agent_win_install_dir
+- zabbix_agent - Removed zabbix_win_install_dir_conf variable and replaced with zabbix_agent_win_install_dir_conf
+- zabbix_maintenance - Added support for multiple outage periods within a single event
+- zabbix_maintenance - Added support for recuring maintenance windows
+- zabbix_script - Added support for type 'url'
+- zabbix_script - Added support for user input.
+
+Deprecated Features
+-------------------
+
+- zabbix_maintenance module - Depreicated `minutes` argument for `time_periods`
+
+Bugfixes
+--------
+
+- Proxy Role - Fixed a deprication error with `ProxyConfigFrequency`
+- web role - Fixed a value test in nginx_vhost.conf
+- zabbix_agent - Fix all variables related to windows installation paths
+- zabbix_agent role - Fix windows paths to download and install zabbix agent msi
+- zabbix_agent role - fixes too many requests to check latest zabbix release
+- zabbix_maintenance - Fixed a bug that caused start time to update across multiple runs
+- zabbix_template - Removed need for PY2
+- zabbix_template_info - Removed need for PY2
+
+v4.1.0
+======
+
+Major Changes
+-------------
+
+- All Roles - Updated to support Zabbix 7.4
+
+Minor Changes
+-------------
+
+- Web Role - Added `zabbix_web_custom_php` to allow for addition of customer PHP settings
+- Web Role - Added support for `ssl_prefer_server_ciphers`
+- Web Role - Added support for `zabbix_web_ssl_session_protocols`
+- Web Role - Added support for `zabbix_web_ssl_session_stapling`
+- roles/proxy - Fixing the zabbix_proxy_proxyconfigfrequency functionality
+- zabbix_group_info - Add the possibility to retrive all host Group
+- zabbix_template_info - Add the possibility to retrive all template Group
+
+Deprecated Features
+-------------------
+
+- Web Role - Depricated `zabbix_web_SSLSessionCacheTimeout` for `zabbix_web_ssl_session_cache_timeout`
+- Web Role - Depricated `zabbix_web_SSLSessionCache` for `zabbix_web_ssl_session_cache`
+
+Bugfixes
+--------
+
+- Token Module - Fixed integration with Zabbix 7.4
+
+v4.0.0
+======
+
+Minor Changes
+-------------
+
+- Add `zabbix_http_headers` variable to allow specifying custom HTTP headers for Zabbix API calls. This can be useful for authentication or other custom header requirements.
+- Agent Role - Removed Temporary Fix supporting RHEL9
+- You can now deploy these roles with inject_facts_as_vars set to false
+- roles - sane selinux defaults
+- roles/proxy - optionally creation of proxy_group and adding proxy to group (Zabbix 7.0+)
+- roles/zabbix_agent - Tweaking the windows service
+- zabbix_action module - properly configure discovery check condition in discovery action depending on information provided in discovery check `value`.
+- zabbix_configuration module - Add this module to import configuration data.
+- zabbix_group - add propagate parameter
+- zabbix_item - added support for item types zabbix_agent, snmp_trap, snmp_agent, ipmi_agent and jmx_agent
+- zabbix_mediatype - add Message template for services
+- zabbix_proxy role - fix Zabbix proxy with encryptuion registration
+- zabbix_server role - facilitate overriding database schemas loaded
+- zabbix_server role - facilitate overriding packages installed
+- zabbix_service - add better idempotency that checks every parameter for change and updates only the changed ones
+- zabbix_templategroup - add propagate parameter
+- zabbix_token module - Fix status value for zabbix Auth token.
+- zabbix_token module - update the logic for update of Zabbix Token
+
+Breaking Changes / Porting Guide
+--------------------------------
+
+- All Roles - Remove support for Ubuntu 20.04
+- zabbix 6.4 in roles is no longer supported
+
+Bugfixes
+--------
+
+- host module - Fixed idempotentcy related to changes in tag order.
+- maintenace module - Fixed idempotentcy related to changes in tag order.
+- roles/zabbix_agent - Reading existing PSK files failed on Windows
+- roles/zabbix_agent - UserParameterDir get wrong value if var zabbix_agent_userparamaterdir is set
+- roles/zabbix_repo - debian architectures should map better for i386 and armhf
+- roles/zabbix_repo - debian/ubuntu arm64 repo url fixed for zabbix 7.2
+- zabbix_agent Role - Add _zabbix_agent_pluginsocket variable to override /tmp/agent.plugin.sock
+- zabbix_service - fix propagation_value and propagation_rule parameters
+- zabbix_template_info module - Dump YAML formatted template data without date in Zabbix 7.0 or higher.
+- zabbix_web role - fix /etc/zabbix/web/zabbix.conf.php file mode.
+
+v3.3.0
+======
+
+Major Changes
+-------------
+
+- All Roles - Updated to support version 7.2
+
+Minor Changes
+-------------
+
+- added support for Zabbix 7.2 for all modules
+- zabbix_action module - added Add host tags and Remove host tags operations
+- zabbix_action module fixed SNMP discovery check condition in discovery rule.
+- zabbix_agent role - accept several IPs in `zabbix_agent_listenip` variable.
+- zabbix_connector module added
+- zabbix_discoveryrule - add support for renaming discoveryrules
+- zabbix_group_events_info - add tag support
+- zabbix_item - add support for renaming items
+- zabbix_itemprototype - add support for renaming itemprototypes
+- zabbix_maintenance - Added ability to append host or host groups to existing maintenance.
+- zabbix_mediatype module - fix failure that started to happen since Zabbix 7.0.9
+- zabbix_proxy role - fix Zabbix proxy creation/update at Zabbix >= 7.0
+- zabbix_proxy role - fix Zabbix proxy creation/update at Zabbix server when PSK used
+- zabbix_regexp_info module added
+- zabbix_settings - add support for additional timeout settings
+- zabbix_settings - allow setting ``auditlog_mode`` on Zabbix 7.0 or higher. With this setting you can enable or disable audit logging of system actions.
+- zabbix_trigger - add support for renaming triggers
+- zabbix_triggerprototype - add support for renaming triggerprototypes
+
+Bugfixes
+--------
+
+- Java Gateway Role - Temporary work around to solve failure on RHEL9.
+- zabbix inventory plugin - do not require ``login_user`` and ``login_password`` to be present when ``auth_token`` is provided (https://github.com/ansible-collections/community.zabbix/pull/1439).
+
+New Modules
+-----------
+
+- community.zabbix.zabbix_connector - Create/Delete/Update Zabbix connectors
+- community.zabbix.zabbix_regexp_info - Retrieve Zabbix regular expression
+
 v3.2.0
 ======
 

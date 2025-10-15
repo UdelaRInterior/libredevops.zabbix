@@ -1,28 +1,21 @@
 ---
 - name: Include OS-specific variables
-  ansible.builtin.include_vars: "{{ ansible_os_family }}.yml"
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
   tags:
     - always
 
 - name: Determine Latest Supported Zabbix Version
   ansible.builtin.set_fact:
-    zabbix_server_version: "{{ zabbix_valid_server_versions[ansible_distribution_major_version][0] | default(7.0) }}"
+    zabbix_server_version: "{{ zabbix_valid_server_versions[ansible_facts['distribution_major_version']][0] | default(7.2) }}"
   when: zabbix_server_version is not defined
   tags:
     - always
 
-- name: Set More Variables
-  ansible.builtin.set_fact:
-    zabbix_server_fpinglocation: "{{ zabbix_server_fpinglocation if zabbix_server_fpinglocation is defined else _zabbix_server_fpinglocation}}"
-    zabbix_server_fping6location: "{{ zabbix_server_fping6location if zabbix_server_fping6location is defined else _zabbix_server_fping6location}}"
-  tags:
-    - always
-
 - name: Check that version is supported
-  when: enable_version_check | default(true) | bool
+  when: zabbix_server_version_check | bool
   ansible.builtin.assert:
     that:
-      - "{{ zabbix_server_version|float in zabbix_valid_server_versions[ ansible_facts['distribution_major_version'] ] }}"
+      - zabbix_server_version|float in zabbix_valid_server_versions[ ansible_facts['distribution_major_version'] ]
     fail_msg: Zabbix version {{ zabbix_server_version }} is not supported on {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_major_version'] }}
   tags:
     - always
@@ -31,9 +24,8 @@
   ansible.builtin.include_role:
     name: community.zabbix.zabbix_repo
   vars:
-    zabbix_repo_apt_priority: "{{ zabbix_server_apt_priority | default (omit) }}"
     zabbix_repo_version: "{{ zabbix_server_version }}"
-    zabbix_repo_package: "zabbix_server-{{ zabbix_proxy_database }}"
+    zabbix_repo_package: "zabbix-server-{{ zabbix_server_database }}"
   when: zabbix_manage_repo | default(true)
 
 - name: "Configure SELinux when enabled"
@@ -42,14 +34,14 @@
 
 - name: Install zabbix-server packages
   ansible.builtin.package:
-    name: "{{ _zabbix_server_packages }}"
+    name: "{{ zabbix_server_packages }}"
     state: "{{ zabbix_server_package_state }}"
     update_cache: true
     disablerepo: "{{ zabbix_server_disable_repo | default(_zabbix_server_disable_repo | default(omit)) }}"
     install_recommends: "{{ zabbix_server_install_recommends | default(_zabbix_server_install_recommends | default(omit)) }}"
   environment:
-    http_proxy: "{{ zabbix_http_proxy | default(None) | default(omit) }}"
-    https_proxy: "{{ zabbix_https_proxy | default(None) | default(omit) }}"
+    http_proxy: "{{ zabbix_http_proxy | default('') }}"
+    https_proxy: "{{ zabbix_https_proxy | default('') }}"
   register: _zabbix_server_package_installed
   until: _zabbix_server_package_installed is succeeded
   become: true
