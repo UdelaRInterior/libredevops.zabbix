@@ -29,8 +29,12 @@
 
   - name: '[Zabbix CRUD] Set password access'
     ansible.builtin.set_fact:
-      ansible_user: "{{ zabbix_api_http_user }}"
-      ansible_httpapi_pass: "{{ zabbix_api_http_password }}"
+      # --- Basic Auth (Begin) ---
+      http_login_user: "{{ zabbix_api_http_user | default(-42) }}"
+      http_login_password: "{{ zabbix_api_http_password | default(-42) }}"
+      # --- Basic Auth (End) ---
+      ansible_user: "{{ zabbix_api_login_user }}"
+      ansible_httpapi_pass: "{{ zabbix_api_login_pass }}"
     when: not token_access
 
   - name: '[Zabbix CRUD] Set token access'
