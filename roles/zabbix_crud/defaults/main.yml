@@ -6,8 +6,8 @@ zabbix_api_server_port: 80
 zabbix_api_url_path: 'zabbix'
 zabbix_api_use_ssl: false
 zabbix_api_validate_certs: false
-zabbix_api_http_user: Admin
-zabbix_api_http_password: !unsafe zabbix
+zabbix_api_login_user: Admin
+zabbix_api_login_pass: !unsafe zabbix
 # zabbix_api_auth_key: a_previously_generated_token
 
 
