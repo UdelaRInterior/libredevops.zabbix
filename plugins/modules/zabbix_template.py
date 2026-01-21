@@ -291,12 +291,9 @@ RETURN = r"""
 
 import json
 import traceback
-import re
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_native
-from ansible.module_utils.six import PY2
-
 from ansible_collections.community.zabbix.plugins.module_utils.base import ZabbixBase
 from ansible.module_utils.compat.version import LooseVersion
 
@@ -308,7 +305,7 @@ class Template(ZabbixBase):
     def get_group_ids_by_group_names(self, group_names):
         group_ids = []
         for group_name in group_names:
-            if LooseVersion(self._zbx_api_version) >= LooseVersion("6.2"):
+            if LooseVersion(self._zbx_api_version) >= LooseVersion("7.0"):
                 group = self._zapi.templategroup.get({"output": ["groupid"], "filter": {"name": group_name}})
             else:
                 group = self._zapi.hostgroup.get({"output": ["groupid"], "filter": {"name": group_name}})
@@ -405,7 +402,7 @@ class Template(ZabbixBase):
                 update_rules["templateDashboards"] = update_rules.pop("templateScreens")
 
                 # before Zabbix 6.2 host_groups and template_group are joined into groups parameter
-                if LooseVersion(self._zbx_api_version) < LooseVersion("6.2"):
+                if LooseVersion(self._zbx_api_version) < LooseVersion("7.0"):
                     update_rules["groups"] = {"createMissing": True}
                     update_rules.pop("host_groups", None)
                     update_rules.pop("template_groups", None)
@@ -424,7 +421,7 @@ class Template(ZabbixBase):
         changed = False
         existing_template = self.dump_template(template_ids, template_type="json")
         if template_groups is not None:
-            if LooseVersion(self._zbx_api_version) >= LooseVersion("6.2"):
+            if LooseVersion(self._zbx_api_version) >= LooseVersion("7.0"):
                 existing_groups = [g["name"] for g in existing_template["zabbix_export"]["template_groups"]]
             else:
                 existing_groups = [g["name"] for g in existing_template["zabbix_export"]["groups"]]
@@ -579,17 +576,10 @@ class Template(ZabbixBase):
             update_rules["templateDashboards"] = update_rules.pop("templateScreens")
 
             # before Zabbix 6.2 host_groups and template_group are joined into groups parameter
-            if LooseVersion(self._zbx_api_version) < LooseVersion("6.2"):
+            if LooseVersion(self._zbx_api_version) < LooseVersion("7.0"):
                 update_rules["groups"] = {"createMissing": True}
                 update_rules.pop("host_groups", None)
                 update_rules.pop("template_groups", None)
-
-            # The loaded unicode slash of multibyte as a string is escaped when parsing JSON by json.loads in Python2.
-            # So, it is imported in the unicode string into Zabbix.
-            # The following processing is removing the unnecessary slash in escaped for decoding correctly to the multibyte string.
-            # https://github.com/ansible-collections/community.zabbix/issues/314
-            if PY2:
-                template_content = re.sub(r"\\\\u([0-9a-z]{,4})", r"\\u\1", template_content)
 
             import_data = {"format": template_type, "source": template_content, "rules": update_rules}
             self._zapi.configuration.import_(import_data)

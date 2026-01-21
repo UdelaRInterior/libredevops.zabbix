@@ -16,6 +16,7 @@
       - [Apache configuration](#apache-configuration)
       - [Nginx configuration](#nginx-configuration)
       - [PHP-FPM](#php-fpm)
+    - [SElinux](#selinux)
     - [Zabbix Server](#zabbix-server)
   * [proxy](#proxy)
 - [Example Playbook](#example-playbook)
@@ -54,16 +55,17 @@ ansible-galaxy collection install community.general
 
 See the following list of supported Operating Systems with the Zabbix releases.
 
-| Zabbix              | 6.4 | 6.2 | 6.0 |
-|---------------------|-----|-----|-----|
-| Red Hat Fam 9       |  V  |  V  |  V  |
-| Red Hat Fam 8       |  V  |  V  |  V  |
-| Ubuntu 22.04 jammy  |  V  |  V  |  V  |
-| Ubuntu 20.04 focal  |  V  |  V  |  V  |
-| Ubuntu 18.04 bionic |     |     |  V  |
-| Debian 12 bookworm  |  V  |     |  V  |
-| Debian 11 bullseye  |  V  |  V  |  V  |
-| Debian 10 buster    |     |     |  V  |
+| Zabbix              | 7.4 | 7.2 | 7.0 | 6.0 |
+|---------------------|-----|-----|-----|-----|
+| Red Hat Fam 9       |  V  |  V  |  V  |  V  |
+| Red Hat Fam 8       |  V  |  V  |  V  |  V  |
+| Ubuntu 24.04 noble  |  V  |  V  |  V  |  V  |
+| Ubuntu 22.04 jammy  |  V  |  V  |  V  |  V  |
+| Debian 12 bookworm  |  V  |  V  |  V  |  V  |
+| Debian 11 bullseye  |     |     |     |  V  |
+| Suse Fam 15         |  V  |  V  |  V  |  V  |
+
+You can bypass this matrix by setting `enable_version_check: false`
 
 # Installation
 
@@ -86,16 +88,12 @@ The following is an overview of all available configuration defaults for this ro
 
 * `zabbix_web_version`: Optional. The latest available major.minor version of Zabbix will be installed on the host(s). If you want to use an older version, please specify this in the major.minor format. Example: `zabbix_web_version: 6.0`.
 * `zabbix_web_version_minor`: When you want to specify a minor version to be installed. RedHat only. Default set to: `*` (latest available)
-* `zabbix_repo_yum`: A list with Yum repository configuration.
-* `zabbix_repo_yum_schema`: Default: `https`. Option to change the web schema for the yum repository(http/https)
 * `zabbix_web_disable_repo`: A list of repos to disable during install.  Default `epel`.
 * `zabbix_web_package_state`: Default: `present`. Can be overridden to `latest` to update packages when needed.
 * `zabbix_web_doubleprecision`: Default: `False`. For upgraded installations, please read database [upgrade notes](https://www.zabbix.com/documentation/current/manual/installation/upgrade_notes_500) (Paragraph "Enabling extended range of numeric (float) values") before enabling this option.
 * `zabbix_web_conf_mode`: Default: `0644`. The "mode" for the Zabbix configuration file.
-* `zabbix_repo_deb_url`: The URL to the Zabbix repository.  Default `http://repo.zabbix.com/zabbix/{{ zabbix_web_version }}/{{ ansible_distribution.lower() }}`
-* `zabbix_repo_deb_component`: The repository component for Debian installs. Default `main`.
-* `zabbix_repo_deb_gpg_key_url`: The URL to download the Zabbix GPG key from. Default `http://repo.zabbix.com/zabbix-official-repo.key`.
-* `zabbix_repo_deb_include_deb_src`: True, if deb-src should be included in the zabbix.sources entry. Default `true`.
+* `zabbix_manage_repo`: Have the collection install and configure the Zabbix repo Default `true`.
+
 
 ### Zabbix Web specific
 
@@ -118,7 +116,6 @@ The following is an overview of all available configuration defaults for this ro
 * `zabbix_web_vhost_port`: The port on which Zabbix HTTP vhost is running.
 * `zabbix_web_vhost_tls_port`: The port on which Zabbix HTTPS vhost is running.
 * `zabbix_web_vhost_listen_ip`: On which interface the Apache Virtual Host is available.
-* `zabbix_apache_can_connect_ldap`: Default: `false`. Set SELinux boolean to allow httpd to connect to LDAP.
 * `zabbix_web_max_execution_time`: PHP max execution time
 * `zabbix_web_memory_limit`: PHP memory limit
 * `zabbix_web_post_max_size`: PHP maximum post size
@@ -130,10 +127,15 @@ The following is an overview of all available configuration defaults for this ro
 * `zabbix_web_tls_key`: The path to the TLS key file.
 * `zabbix_web_tls_chain`: The path to the TLS certificate chain file.
 * `zabbix_web_SSLPassPhraseDialog`: Type of pass phrase dialog for encrypted private keys.
-* `zabbix_web_SSLSessionCache`: Type of the global/inter-process SSL Session Cache
-* `zabbix_web_SSLSessionCacheTimeout`: Number of seconds before an SSL session expires in the Session Cache
+* `zabbix_web_ssl_session_cache`: Type of the global/inter-process SSL Session Cache
+* `zabbix_web_ssl_session_cache_timeout`: Number of seconds before an SSL session expires in the Session Cache
 * `zabbix_web_SSLCryptoDevice`: Enable use of a cryptographic hardware accelerator
 * `zabbix_apache_custom_includes`: Configure custom includes. Default: `[]`
+* `zabbix_web_ssl_http2`: Bool (default:  False) if using http2
+* `zabbix_web_ssl_session_protocols`: Space seperated list of ssl protocols to explicitly allow (Nginx only)
+* `zabbix_web_ssl_session_prefer_server_ciphers`: (`on`/`off`)  Should server ciphers be prefered over client ciphers (Nginx only)
+* `zabbix_web_ssl_session_stapling`: (`on`/`off`)  Should enable/disable stapling of OCSP responses by server (Nginx only)
+
 
 When `zabbix_web_tls_crt`, `zabbix_web_tls_key` and/or `zabbix_web_tls_chain` are used, make sure that these files exists before executing this role. The Zabbix-Web role will not install the mentioned files.
 
@@ -144,14 +146,39 @@ See https://httpd.apache.org/docs/current/mod/mod_ssl.html for SSL* configuratio
 
 #### PHP-FPM
 
-The following properties are specific to Zabbix 5.0 and for the PHP(-FPM) configuration:
+The following properties are for the PHP(-FPM) configuration:
 
 * `zabbix_php_fpm_session`: The directory where sessions will be stored. If none are provided, defaults are used.
 * `zabbix_php_fpm_listen`: The path to a socket file or ipaddress:port combination on which PHP-FPM needs to listen. If none are provided, defaults are used.
 * `zabbix_php_fpm_conf_listen`: Default: `true`. If we want to configure the `zabbix_php_fpm_listen` in the PHP-FPM configuration file.
 * `zabbix_php_fpm_conf_user`: The owner of the socket file (When `zabbix_php_fpm_listen` contains a patch to a socket file).
-
 * `zabbix_php_fpm_conf_group`: The group of the owner of the socket file (When `zabbix_php_fpm_listen` contains a patch to a socket file).
+
+
+The following values can be used to tune php-fpm for better performance on the frontend:
+
+* `zabbix_web_php_fpm_mode`: Set the mode the php process management will work in. Available dynamic, static, ondemand - default: dynamic
+* `zabbix_web_php_fpm_max_childs`: Set maximum number of process children php-fpm can spawn - default: 50
+* `zabbix_web_php_fpm_start_servers`: The number of child process to be spawned on start. default: 5
+* `zabbix_web_php_fpm_min_spare_servers`: The minimum number of idle child processes PHP-FPM will create. More are created if fewer than this number are available. - default: 5
+* `zabbix_web_php_fpm_max_spare_servers`: The maximum number of idle child processes PHP-FPM will create. If there are more child processes available than this value, then some will be killed off. - default: 35
+* `zabbix_web_custom_php`:  Any customer php settings
+
+##### Tunning recommendations
+| Setting                              | Value                                                        |
+|--------------------------------------|--------------------------------------------------------------|
+| zabbix_web_php_fpm_max_childs        | (Total RAM – Memory used for Linux, DB, etc.) / process size |
+| zabbix_web_php_fpm_start_servers     | Number of CPU cores x 4                                      |
+| zabbix_web_php_fpm_min_spare_servers | Number of CPU cores x 2                                      |
+| zabbix_web_php_fpm_max_spare_servers | Same as start_servers                                        |
+
+### SElinux
+
+Selinux changes will be installed based on the status of selinux running on the target system.
+
+* `selinux_allow_httpd_can_connect_ldap`: Default: `False`. Set SELinux boolean to allow httpd to connect to LDAP.
+* `selinux_allow_httpd_can_connect_zabbix`: Default: `True`. Set SELinux boolean to allow httpd to connect to zabbix.
+* `selinux_allow_httpd_can_network_connect_db`: Default: `True` Set SELinux boolean to allow httpd to connect databases over the network.
 
 ### Zabbix Server
 

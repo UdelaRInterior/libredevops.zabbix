@@ -77,17 +77,17 @@ ansible-galaxy collection install community.postgresql
 
 See the following list of supported Operating systems with the Zabbix releases.
 
-| Zabbix              | 6.4 | 6.2 | 6.0 |
-|---------------------|-----|-----|-----|
-| Red Hat Fam 9       |  V  |  V  |  V  |
-| Red Hat Fam 8       |  V  |  V  |  V  |
-| Red Hat Fam 7       |  V  |  V  |  V  |
-| Ubuntu 22.04 jammy  |  V  |  V  |  V  |
-| Ubuntu 20.04 focal  |  V  |  V  |  V  |
-| Ubuntu 18.04 bionic |  V  |  V  |  V  |
-| Debian 12 bookworm  |  V  |     |  V  |
-| Debian 11 bullseye  |  V  |  V  |  V  |
-| Debian 10 buster    |  V  |  V  |  V  |
+| Zabbix              | 7.4 | 7.2 | 7.0 | 6.0 |
+|---------------------|-----|-----|-----|-----|
+| Red Hat Fam 9       |  V  |  V  |  V  |  V  |
+| Red Hat Fam 8       |  V  |  V  |  V  |  V  |
+| Ubuntu 24.04 noble  |  V  |  V  |  V  |  V  |
+| Ubuntu 22.04 jammy  |  V  |  V  |  V  |  V  |
+| Debian 12 bookworm  |  V  |  V  |  V  |  V  |
+| Debian 11 bullseye  |  V  |  V  |  V  |  V  |
+| Suse Fam 15         |  V  |  V  |  V  |  V  |
+
+You can bypass this matrix by setting `enable_version_check: false`
 
 # Role Variables
 
@@ -99,12 +99,13 @@ The following is an overview of all available configuration default for this rol
 
 * `zabbix_proxy_version`:  Optional. The latest available major.minor version of Zabbix will be installed on the host(s). If you want to use an older version, please specify this in the major.minor format. Example: `zabbix_proxy_version: 6.0`.
 * `zabbix_proxy_version_minor`: When you want to specify a minor version to be installed. RedHat only. Default set to: `*` (latest available)
-* `zabbix_proxy_ip`: The IP address of the host. When not provided, it will be determined via the `ansible_default_ipv4` fact.
+* `zabbix_proxy_ip`: The IP address of the host. When not provided, it will be determined via the `ansible_default_ipv4` fact, with a fallback to the first available IP address.
 * `zabbix_proxy_server`: The ip or dns name for the zabbix-server machine.
 * `zabbix_proxy_install_database_client`: Default: `True`. False does not install database client.
 * `zabbix_proxy_manage_service`: Default: `True`. When you run multiple Zabbix proxies in a High Available cluster setup (e.g. pacemaker), you don't want Ansible to manage the zabbix-proxy service, because Pacemaker is in control of zabbix-proxy service.
 * `zabbix_proxy_include_mode`: Default: `0755`. The "mode" for the directory configured with `zabbix_proxy_include`.
 * `zabbix_proxy_conf_mode`: Default: `0644`. The "mode" for the Zabbix configuration file.
+* `zabbix_manage_repo`: Have the collection install and configure the Zabbix repo Default `true`.
 
 ### Database specific
 
@@ -127,10 +128,8 @@ The following is an overview of all available configuration default for this rol
 ### Yum/APT
 * `zabbix_repo_yum`: A list with Yum repository configuration.
 * `zabbix_repo_yum_schema`: Default: `https`. Option to change the web schema for the yum repository(http/https)
-* `zabbix_repo_yum_gpgcheck`: Default: `0`.  Should yum perform a GPG check on the repository
 * `zabbix_proxy_disable_repo`: A list of repos to disable during install.  Default `epel`.
-* `zabbix_proxy_apt_priority`: APT priority for the zabbix repository
-* `*zabbix_proxy_package_state`: Default: `present`. Can be overridden to `latest` to update packages
+* `zabbix_proxy_package_state`: Default: `present`. Can be overridden to `latest` to update packages
 * `zabbix_repo_deb_url`: The URL to the Zabbix repository.  Default `http://repo.zabbix.com/zabbix/{{ zabbix_proxy_version }}/{{ ansible_distribution.lower() }}`
 * `zabbix_repo_deb_component`: The repository component for Debian installs. Default `main`.
 * `zabbix_repo_deb_gpg_key_url`: The URL to download the Zabbix GPG key from. Default `http://repo.zabbix.com/zabbix-official-repo.key`.
@@ -138,7 +137,9 @@ The following is an overview of all available configuration default for this rol
 
 ### SElinux
 
-* `zabbix_proxy_selinux`: Default: `False`. Enables an SELinux policy so that the Proxy will run.
+Selinux changes will be installed based on the status of selinux running on the target system.
+
+* `selinux_allow_zabbix_can_network`: Default: `True`.
 
 ## Proxy
 
@@ -287,6 +288,12 @@ These variables need to be overridden when you want to make use of the Zabbix AP
 * `zabbix_proxy_name`: name of the Zabbix proxy as it is seen by Zabbix server
 * `zabbix_proxy_state`: present (Default) if the proxy needs to be created or absent if you want to delete it. This only works when `zabbix_api_create_proxy` is set to `True`.
 * `zabbix_proxy_status`: active (Default) if the proxy needs to be active or passive.
+* `zabbix_api_create_proxy_group`: When you want to enable the Zabbix API to create/delete the proxy group. This has to be set to `True` if you want to make use of `zabbix_proxy_group_state`. Is using the same API connectivity options as `zabbix_api_create_proxy`. Default: `False`. Version 7.0 or Greater.
+* `zabbix_proxy_group_name`: Name of the Zabbix proxy group as it is seen by Zabbix server. Version 7.0 or Greater.
+* `zabbix_proxy_group_state`: Present (Default) if the proxy group needs to be created or absent if you want to delete it. This only works when `zabbix_api_create_proxy_group` is set to `True`. The Zabbix proxy this variable is used together with, will be automatically assigned to that `zabbix_proxy_group_name` proxy group. Version 7.0 or Greater.
+* `zabbix_proxy_group_description`: Zabbix proxy group description. Default `omit`. Version 7.0 or Greater.
+* `zabbix_proxy_group_failover_delay`: Failover period for each proxy in the group to have online/offline state. Default `1m`. Version 7.0 or Greater.
+* `zabbix_proxy_group_min_online`: Minimum number of online proxies required for the group to be online. Possible values range: 1-1000. Default `1`. Version 7.0 or Greater.
 
 ## Configuration Variables
 
@@ -296,14 +303,15 @@ The following table lists all variables that are exposed to modify the configura
 
 | Zabbix Name | Variable Name | Default Value |Notes |
 |-----------|------------------|--------|--------|
-| AllowRoot | zabbix_proxy_allowroot |0| |
-| AllowUnsupportedDBVersions | zabbix_proxy_allowunsupporteddbversions |0| |
-| CacheSize | zabbix_proxy_cachesize | 8M| |
-| ConfigFrequency | zabbix_proxy_configfrequency |3600| |
-| DataSenderFrequency | zabbix_proxy_datasenderfrequency |1| |
+| AllowRoot | zabbix_proxy_allowroot | `False` | `True`/`False` |
+| AllowUnsupportedDBVersions | zabbix_proxy_allowunsupporteddbversions | `False` | `True`/`False` |
+| CacheSize | zabbix_proxy_cachesize | 32M | |
+| ConfigFrequency | zabbix_proxy_configfrequency | 3600 | Being deprecated. In conflict with ProxyConfigFrequency. |
+| DataSenderFrequency | zabbix_proxy_datasenderfrequency | 1 | |
 | DBHost | zabbix_proxy_dbhost | localhost| |
 | DBName | zabbix_proxy_dbname | zabbix_proxy| |
 | DBPassword | zabbix_proxy_dbpassword | zabbix_proxy| |
+| DBPort | zabbix_proxy_dbport | Varies by database | |
 | DBSchema | zabbix_proxy_dbschema || |
 | DBSocket | zabbix_proxy_dbsocket || |
 | DBTLSCAFile | zabbix_proxy_dbtlscafile || |
@@ -314,54 +322,64 @@ The following table lists all variables that are exposed to modify the configura
 | DBTLSKeyFile | zabbix_proxy_dbtlskeyfile || |
 | DBUser | zabbix_proxy_dbuser | zabbix_proxy| |
 | DebugLevel | zabbix_proxy_debuglevel |3| |
-| EnableRemoteCommands | zabbix_proxy_enableremotecommands |0| |
+| EnableRemoteCommands | zabbix_proxy_enableremotecommands | `False` | `True`/`False` |
 | ExternalScripts | zabbix_proxy_externalscripts | /usr/lib/zabbix/externalscripts| |
 | Fping6Location | zabbix_proxy_fping6location | OS Specific Value | |
 | FpingLocation | zabbix_proxy_fpinglocation | OS Specific Value | |
-| HeartbeatFrequency | zabbix_proxy_heartbeatfrequency |60| Version 6.2 or Lower|
-| HistoryCacheSize | zabbix_proxy_historycachesize | 8M| |
+| HeartbeatFrequency | zabbix_proxy_heartbeatfrequency |60| Version 6.0 |
+| HistoryCacheSize | zabbix_proxy_historycachesize | 16M| |
 | HistoryIndexCacheSize | zabbix_proxy_historyindexcachesize | 4M| |
 | Hostname | zabbix_proxy_hostname | "{{ inventory_hostname }}"| |
 | HostnameItem | zabbix_proxy_hostnameitem || |
 | HousekeepingFrequency | zabbix_proxy_housekeepingfrequency |1| |
-| Include | zabbix_proxy_include | /etc/zabbix/zabbix_proxy.conf.d| |
+| Include | zabbix_proxy_include | /etc/zabbix/zabbix_proxy.conf.d/*.conf | |
 | JavaGateway | zabbix_proxy_javagateway || |
 | JavaGatewayPort | zabbix_proxy_javagatewayport |10052| |
 | ListenBacklog | zabbix_proxy_listenbacklog || |
-| ListenIP | zabbix_proxy_listenip || |
+| ListenIP | zabbix_proxy_listenip |0.0.0.0 | |
 | ListenPort | zabbix_proxy_listenport |10051| |
 | LoadModule | zabbix_proxy_loadmodule || |
 | LoadModulePath | zabbix_proxy_loadmodulepath | /usr/lib/zabbix/modules| |
 | LogFile | zabbix_proxy_logfile | /var/log/zabbix/zabbix_proxy.log| |
 | LogFileSize | zabbix_proxy_logfilesize |10| |
-| LogRemoteCommands | zabbix_proxy_logremotecommands || |
-| LogSlowQueries | zabbix_proxy_logslowqueries || |
+| LogRemoteCommands | zabbix_proxy_logremotecommands | `False` | `True`/`False` |
+| LogSlowQueries | zabbix_proxy_logslowqueries | 0 | |
 | LogType | zabbix_proxy_logtype | file| |
+| MaxConcurrentChecksPerPoller | zabbix_proxy_maxconcurrentchecksperpoller | 1000 | Version 7.0 or Greater |
 | PidFile | zabbix_proxy_pidfile | /var/run/zabbix/zabbix_proxy.pid| |
+| ProxyBufferMode | zabbix_proxy_proxybuffermode | disk | Version 7.0 or Greater |
+| ProxyConfigFrequency | zabbix_proxy_proxyconfigfrequency | 10 | Version 6.4 or Greater |
 | ProxyLocalBuffer | zabbix_proxy_proxylocalbuffer |0| |
-| ProxyMode | zabbix_proxy_proxymode || |
-| ProxyOfflineBuffer | zabbix_proxy_proxyofflinebuffer |1| |
+| ProxyMemoryBufferAge | zabbix_proxy_proxymemorybufferage | 0 | Version 7.0 or Greater |
+| ProxyMemoryBufferSize | zabbix_proxy_proxymemorybuffersize | 0 | Version 7.0 or Greater |
+| ProxyMode | zabbix_proxy_proxymode | 0 | `0`: Active `1`: Passive |
+| ProxyOfflineBuffer | zabbix_proxy_proxyofflinebuffer | 1 | |
 | Server | zabbix_proxy_server | 192.168.1.1| |
-| SNMPTrapperFile | zabbix_proxy_snmptrapperfile | /tmp/zabbix_traps.tmp| |
-| SocketDir | zabbix_proxy_socketdir | /var/run/zabbix| |
+| SNMPTrapperFile | zabbix_proxy_snmptrapperfile | /tmp/zabbix_traps.tmp | |
+| SocketDir | zabbix_proxy_socketdir | /var/run/zabbix | |
 | SourceIP | zabbix_proxy_sourceip || |
 | SSHKeyLocation | zabbix_proxy_sshkeylocation || |
 | SSLCALocation | zabbix_proxy_sslcalocation || |
 | SSLCertLocation | zabbix_proxy_sslcertlocation || |
 | SSLKeyLocation | zabbix_proxy_sslkeylocation || |
+| StartAgentPollers | zabbix_proxy_startagentpollers | 1 | Version 7.0 or Greater |
+| StartBrowserPollers | zabbix_proxy_startbrowserpollers | 1 | Version 7.0 or Greater |
 | StartDBSyncers | zabbix_proxy_startdbsyncers |4| |
 | StartDiscoverers | zabbix_proxy_startdiscoverers |1| |
+| StartHistoryPollers | zabbix_proxy_starthistorypollers | 1 | Version 6.0 |
+| StartHTTPAgentPollers | zabbix_proxy_starthttpagentpollers | 1 | Version 7.0 or Greater |
 | StartHTTPPollers | zabbix_proxy_starthttppollers |1| |
 | StartIPMIPollers | zabbix_proxy_startipmipollers |0| |
-| StartJavaPollers | zabbix_proxy_startjavapollers || |
+| StartJavaPollers | zabbix_proxy_startjavapollers |0 | |
 | StartODBCPollers | zabbix_proxy_startodbcpollers |1| |
 | StartPingers | zabbix_proxy_startpingers |1| |
 | StartPollers | zabbix_proxy_startpollers |5| |
 | StartPollersUnreachable | zabbix_proxy_startpollersunreachable |1| |
 | StartPreprocessors | zabbix_proxy_startpreprocessors |3| |
-| StartSNMPTrapper | zabbix_proxy_startsnmptrapper || |
+| StartSNMPPollers | zabbix_proxy_startsnmppollers | 1 | Version 7.0 or Greater |
+| StartSNMPTrapper | zabbix_proxy_startsnmptrapper | 0 | |
 | StartTrappers | zabbix_proxy_starttrappers |5| |
-| StartVMwareCollectors | zabbix_proxy_startvmwarecollectors || |
+| StartVMwareCollectors | zabbix_proxy_startvmwarecollectors | 0 | |
 | StatsAllowedIP | zabbix_proxy_statsallowedip | "127.0.0.1"| |
 | Timeout | zabbix_proxy_timeout |3| |
 | TLSAccept | zabbix_proxy_tlsaccept || |
@@ -382,20 +400,22 @@ The following table lists all variables that are exposed to modify the configura
 | TLSServerCertSubject | zabbix_proxy_tlsservercertsubject || |
 | TmpDir | zabbix_proxy_tmpdir | /tmp| |
 | TrapperTimeout | zabbix_proxy_trappertimeout |300| |
-| UnavailableDelay | zabbix_proxy_unavailabledelay || |
-| UnreachableDelay | zabbix_proxy_unreachabledelay || |
-| UnreachablePeriod | zabbix_proxy_unreachableperiod |45| |
-| User | zabbix_proxy_user || |
+| UnavailableDelay | zabbix_proxy_unavailabledelay | 60| |
+| UnreachableDelay | zabbix_proxy_unreachabledelay | 15 | |
+| UnreachablePeriod | zabbix_proxy_unreachableperiod | 45| |
+| User | zabbix_proxy_user | zabbix | |
 | Vault | zabbix_proxy_vault || Version 6.2 or Greater |
 | VaultDBPath | zabbix_proxy_vaultdbpath || |
-| VaultTLSCertFile | zabbix_proxy_vaulttlscertfile || Version 6.2 or Greater |
-| VaultTLSKeyFile | zabbix_proxy_vaulttlskeyfile || Version 6.2 or Greater |
+| VaultPrefix | zabbix_proxy_vaultprefix || Version 7.0 or Greater |
+| VaultTLSCertFile | zabbix_proxy_vaulttlscertfile || Version 6.4 or Greater |
+| VaultTLSKeyFile | zabbix_proxy_vaulttlskeyfile || Version 6.4 or Greater |
 | VaultToken | zabbix_proxy_vaulttoken || |
 | VaultURL | zabbix_proxy_vaulturl |https://127.0.0.1:8200| |
 | VMwareCacheSize | zabbix_proxy_vmwarecachesize | 8M| |
 | VMwareFrequency | zabbix_proxy_vmwarefrequency |60| |
-| VMwarePerfFrequency | zabbix_proxy_vmwareperffrequency | | |
-| VMwareTimeout | zabbix_proxy_vmwaretimeout | | |
+| VMwarePerfFrequency | zabbix_proxy_vmwareperffrequency | 60 | |
+| VMwareTimeout | zabbix_proxy_vmwaretimeout | 10 | |
+| WebDriverURL | zabbix_proxy_webdriverurl | | Version 7.0 or Greater |
 
 ## Tags
 
@@ -422,7 +442,7 @@ Including an example of how to use your role (for instance, with variables passe
 
 # Molecule
 
-This role is configured to be tested with Molecule. You can find on this page some more information regarding Molecule: 
+This role is configured to be tested with Molecule. You can find on this page some more information regarding Molecule:
 
 * http://werner-dijkerman.nl/2016/07/10/testing-ansible-roles-with-molecule-testinfra-and-docker/
 * http://werner-dijkerman.nl/2016/07/27/extending-ansible-role-testing-with-molecule-by-adding-group_vars-dependencies-and-using-travis-ci/
@@ -441,4 +461,3 @@ See LICENCE to see the full text.
 Please send suggestion or pull requests to make this role better. Also let us know if you encounter any issues installing or using this role.
 
 Github: https://github.com/ansible-collections/community.zabbix
-

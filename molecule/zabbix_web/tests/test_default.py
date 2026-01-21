@@ -13,7 +13,11 @@ def test_zabbix_package(host):
     version = ansible_data['zabbix_web_version']
     webserver = ansible_data['zabbix_web_http_server']
 
-    zabbix_web = host.package(f'zabbix-%s-conf' % webserver)
+    package_name = f'zabbix-{webserver}-conf'
+    if host.system_info.distribution == "opensuse-leap" and version == 7.0:
+        package_name = f'zabbix-{webserver}-conf-php8'
+    
+    zabbix_web = host.package(package_name)
     assert str(version) in zabbix_web.version
 
 
@@ -32,14 +36,26 @@ def test_zabbix_web(host):
         elif zabbix_websrv == "nginx":
             assert zabbix_web.user == "nginx"
             assert zabbix_web.group == "nginx"
-    assert zabbix_web.mode == 0o644
+    elif host.system_info.distribution == "opensuse-leap":
+        if zabbix_websrv == "apache":
+            assert zabbix_web.user == "wwwrun"
+            assert zabbix_web.group == "wwwrun"
+        elif zabbix_websrv == "nginx":
+            assert zabbix_web.user == "nginx"
+            assert zabbix_web.group == "nginx"
+    assert zabbix_web.mode == 0o640
 
 
 def test_zabbix_api(host):
     my_host = host.ansible.get_variables()
+    version = my_host['zabbix_web_version']
     zabbix_api_server_url = str(my_host["zabbix_api_server_url"])
     hostname = "http://" + zabbix_api_server_url + "/api_jsonrpc.php"
-    post_data = '{"jsonrpc": "2.0", "method": "user.login", "params": { "username": "Admin", "password": "zabbix" }, "id": 1, "auth": null}'
+    if version <= 7.0:
+        post_data = '{"jsonrpc": "2.0", "method": "user.login", "params": { "username": "Admin", "password": "zabbix" }, "id": 1, "auth": null}'
+    else:
+        post_data = '{"jsonrpc": "2.0", "method": "user.login", "params": { "username": "Admin", "password": "zabbix" }, "id": 1}'
+        
     headers = "Content-Type: application/json-rpc"
     command = (
         "curl -XPOST -H '"

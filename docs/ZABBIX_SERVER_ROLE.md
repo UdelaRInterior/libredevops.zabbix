@@ -57,7 +57,7 @@ ansible-galaxy collection install ansible.posix
 
 ### MySQL
 
-When you are a MySQL user and using Ansible 2.10 or newer, then there is a dependency on the collection named `community.mysql`. This collections are needed as the `mysql_` modules are now part of collections and not standard in Ansible anymmore. Installing the collection:
+When you are a MySQL user and using Ansible 2.10 or newer, then there is a dependency on the collection named `community.mysql`. This collections are needed as the `mysql_` modules are now part of collections and not standard in Ansible anymore. Installing the collection:
 
 ```sh
 ansible-galaxy collection install community.mysql
@@ -75,16 +75,17 @@ ansible-galaxy collection install community.postgresql
 
 See the following list of supported Operating systems with the Zabbix releases:
 
-| Zabbix              | 6.4 | 6.2 | 6.0 |
-|---------------------|-----|-----|-----|
-| Red Hat Fam 9       |  V  |  V  |  V  |
-| Red Hat Fam 8       |  V  |  V  |  V  |
-| Ubuntu 22.04 jammy  |  V  |  V  |  V  |
-| Ubuntu 20.04 focal  |  V  |  V  |  V  |
-| Ubuntu 18.04 bionic |     |     |  V  |
-| Debian 12 bookworm  |  V  |     |  V  |
-| Debian 11 bullseye  |  V  |  V  |  V  |
-| Debian 10 buster    |     |     |  V  |
+| Zabbix              | 7.4 | 7.2 | 7.0 | 6.0 |
+|---------------------|-----|-----|-----|-----|
+| Red Hat Fam 9       |  V  |  V  |  V  |  V  |
+| Red Hat Fam 8       |  V  |  V  |  V  |  V  |
+| Ubuntu 24.04 noble  |  V  |  V  |  V  |  V  |
+| Ubuntu 22.04 jammy  |  V  |  V  |  V  |  V  |
+| Debian 12 bookworm  |  V  |  V  |  V  |  V  |
+| Debian 11 bullseye  |     |     |     |  V  |
+| Suse Fam 15         |  V  |  V  |  V  |  V  |
+
+You can bypass this matrix by setting `enable_version_check: false`
 
 # Installation
 
@@ -102,24 +103,21 @@ The following is an overview of all available configuration default for this rol
 
 * `zabbix_server_version`: Optional. The latest available major.minor version of Zabbix will be installed on the host(s). If you want to use an older version, please specify this in the major.minor format. Example: `zabbix_server_version: 6.0`.
 * `zabbix_server_version_minor`: When you want to specify a minor version to be installed. RedHat only. Default set to: `*` (latest available)
-* `zabbix_repo_yum`: A list with Yum repository configuration.
-* `zabbix_repo_yum_schema`: Default: `https`. Option to change the web schema for the yum repository(http/https)
 * `zabbix_server_disable_repo`: A list of repos to disable during install.  Default `epel`.
 * `zabbix_service_state`: Default: `started`. Can be overridden to stopped if needed
 * `zabbix_service_enabled`: Default: `True` Can be overridden to `False` if needed
-* `zabbix_repo_deb_url`: The URL to the Zabbix repository.  Default `http://repo.zabbix.com/zabbix/{{ zabbix_server_version }}/{{ ansible_distribution.lower() }}`
-* `zabbix_repo_deb_component`: The repository component for Debian installs. Default `main`.
-* `zabbix_repo_deb_gpg_key_url`: The URL to download the Zabbix GPG key from. Default `http://repo.zabbix.com/zabbix-official-repo.key`.
-* `zabbix_repo_deb_include_deb_src`: True, if deb-src should be included in the zabbix.sources entry. Default `true`.
+* `zabbix_manage_repo`: Have the collection install and configure the Zabbix repo Default `true`.
+
 
 ### SElinux
 
-* `zabbix_server_selinux`: Default: `False`. Enables an SELinux policy so that the server will run.
-* `selinux_allow_zabbix_can_network`: Default: `False`. 
-* `selinux_allow_zabbix_can_http`: Default: `False`. 
+Selinux changes will be installed based on the status of selinux running on the target system.
+
+* `selinux_allow_zabbix_can_network`: Default: `True`.
 
 ### Zabbix Server
 
+* `zabbix_server_packages`: List of packages to install, can be overridden for a non-supported/custom setup.
 * `zabbix_server_package_state`: Default: `present`. Can be overridden to `latest` to update packages when needed.
 * `zabbix_server_install_recommends`: Default: `True`. `False` does not install the recommended packages that come with the zabbix-server install.
 * `zabbix_server_manage_service`: Default: `True`. When you run multiple Zabbix servers in a High Available cluster setup (e.g. pacemaker), you don't want Ansible to manage the zabbix-server service, because Pacemaker is in control of zabbix-server service and in this case, it needs to be set to `False`.
@@ -142,6 +140,7 @@ The following is an overview of all available configuration default for this rol
 * `zabbix_server_install_database_client`: Default: `True`. False does not install database client. Default true
 * `zabbix_server_database_sqlload`:True / False. When you don't want to load the sql files into the database, you can set it to False.
 * `zabbix_server_database_timescaledb`:False / True. When you want to use timescaledb extension into the database, you can set it to True (this option only works for postgreSQL database).
+* `zabbix_server_database_schemas`: List of schemas to load, can be overridden for a non-supported/custom setup.
 * `zabbix_server_dbencoding`: Default: `utf8`. The encoding for the MySQL database.
 * `zabbix_server_dbcollation`: Default: `utf8_bin`. The collation for the MySQL database.
 
@@ -287,14 +286,15 @@ The following table lists all variables that are exposed to modify the configura
 | Zabbix Name | Variable Name | Default Value |Notes |
 |-----------|------------------|--------|--------|
 |AlertScriptsPath | zabbix_server_alertscriptspath | /usr/lib/zabbix/alertscripts |  |
-|AllowRoot | zabbix_server_allowroot | 0 |  |
-|AllowUnsupportedDBVersions | zabbix_server_allowunsupporteddbversions |0  |  |
-|CacheSize | zabbix_server_cachesize | |  |
-|CacheUpdateFrequency | zabbix_server_cacheupdatefrequency | |  |
+|AllowRoot | zabbix_server_allowroot | `False` | `True`/`False` |
+|AllowSoftwareUpdateCheck | zabbix_server_allowsoftwareupdatecheck | `True` | `True`/`False` Version 7.0 or later |
+|AllowUnsupportedDBVersions | zabbix_server_allowunsupporteddbversions | `False` | `True`/`False` |
+|CacheSize | zabbix_server_cachesize | 32M |  |
+|CacheUpdateFrequency | zabbix_server_cacheupdatefrequency | varies by version |  |
 |DBHost | zabbix_server_dbhost | localhost |  |
 |DBName | zabbix_server_dbname | zabbix-server |  |
 |DBPassword | zabbix_server_dbpassword | zabbix-server |  |
-|DBPort | zabbix_server_dbport | 5432 |  |
+|DBPort | zabbix_server_dbport | varies by database |  |
 |DBSchema | zabbix_server_dbschema | |  |
 |DBSocket | zabbix_server_dbsocket | |  |
 |DBTLSCAFile | zabbix_server_dbtlscafile | |  |
@@ -305,6 +305,7 @@ The following table lists all variables that are exposed to modify the configura
 |DBTLSKeyFile | zabbix_server_dbtlskeyfile | |  |
 |DBUser | zabbix_server_dbuser | zabbix-server |  |
 |DebugLevel | zabbix_server_debuglevel | 3 |  |
+|EnableGlobalScripts | zabbix_server_enableglobalscripts | `False` | `True`/`False` Version 7.0 or later |
 |ExportDir | zabbix_server_exportdir | |  |
 |ExportFileSize | zabbix_server_exportfilesize | 1G |  |
 |ExportType | zabbix_server_exporttype | |  |
@@ -312,17 +313,17 @@ The following table lists all variables that are exposed to modify the configura
 |Fping6Location | zabbix_server_fping6location | OS Specific Value |  |
 |FpingLocation | zabbix_server_fpinglocation | OS Specific Value |  |
 |HANodeName | zabbix_server_hanodename | |  |
-|HistoryCacheSize | zabbix_server_historycachesize | |  |
-|HistoryIndexCacheSize | zabbix_server_historyindexcachesize | |  |
-|HistoryStorageDateIndex | zabbix_server_historystoragedateindex | 0 |  |
+|HistoryCacheSize | zabbix_server_historycachesize | 16M |  |
+|HistoryIndexCacheSize | zabbix_server_historyindexcachesize | 4M |  |
+|HistoryStorageDateIndex | zabbix_server_historystoragedateindex | `False` | `True`/`False` |
 |HistoryStorageTypes | zabbix_server_historystoragetypes |  uint,dbl,str,log,text |  |
 |HistoryStorageURL | zabbix_server_historystorageurl | |  |
 |HousekeepingFrequency | zabbix_server_housekeepingfrequency | 1 |  |
-|Include | zabbix_server_include | /etc/zabbix/zabbix_server.conf.d |  |
+|Include | zabbix_server_include | /etc/zabbix/zabbix_server.conf.d/*.conf |  |
 |JavaGateway | zabbix_server_javagateway | |  |
 |JavaGatewayPort | zabbix_server_javagatewayport | 10052 |  |
 |ListenBacklog | zabbix_server_listenbacklog | |  |
-|ListenIP | zabbix_server_listenip | |  |
+|ListenIP | zabbix_server_listenip | 0.0.0.0 |  |
 |ListenPort | zabbix_server_listenport | 10051 |  |
 |LoadModule | zabbix_server_loadmodule | |  |
 |LoadModulePath | zabbix_server_loadmodulepath | ${libdir}/modules |  |
@@ -330,35 +331,42 @@ The following table lists all variables that are exposed to modify the configura
 |LogFileSize | zabbix_server_logfilesize | 10 |  |
 |LogSlowQueries | zabbix_server_logslowqueries | 0 |  |
 |LogType | zabbix_server_logtype | file |  |
-|MaxHousekeeperDelete | zabbix_server_maxhousekeeperdelete | 500 |  |
+|MaxConcurrentChecksPerPoller | zabbix_server_maxconcurrentchecksperpoller | 1000 | Version 7.0 or later |
+|MaxHousekeeperDelete | zabbix_server_maxhousekeeperdelete | 5000 |  |
 |NodeAddress | zabbix_server_nodeaddress | |  |
 |PidFile | zabbix_server_pidfile | /var/run/zabbix/zabbix_server.pid |  |
-|ProxyConfigFrequency | zabbix_server_proxyconfigfrequency | |  |
+|ProblemHousekeepingFrequency | zabbix_server_problemhousekeepingfrequency |  |  |
+|ProxyConfigFrequency | zabbix_server_proxyconfigfrequency | 10 |  |
 |ProxyDataFrequency | zabbix_server_proxydatafrequency | 1 |  |
-|SNMPTrapperFile | zabbix_server_snmptrapperfile | |  |
+|ServiceManagerSyncFrequency | zabbix_server_servicemanagersyncfrequency | 60 |  |
+|SNMPTrapperFile | zabbix_server_snmptrapperfile | /tmp/zabbix_traps.tmp |  |
 |SocketDir | zabbix_server_socketdir | /var/run/zabbix |  |
 |SourceIP | zabbix_server_sourceip | |  |
 |SSHKeyLocation | zabbix_server_sshkeylocation | |  |
 |SSLCALocation | zabbix_server_sslcalocation | |  |
 |SSLCertLocation | zabbix_server_sslcertlocation | ${datadir}/zabbix/ssl/certs |  |
 |SSLKeyLocation | zabbix_server_sslkeylocation | ${datadir}/zabbix/ssl/keys |  |
-|StartAlerters | zabbix_server_startalerters | |  |
-|StartConnectors | zabbix_server_connectors | | Version 6.4 or later |
+|StartAgentPollers | zabbix_server_startagentpollers | 1 | Version 7.0 or later |
+|StartAlerters | zabbix_server_startalerters | 3 |  |
+|StartBrowserPollers | zabbix_server_startbrowserpollers | 1 | Version 7.0 or later |
+|StartConnectors | zabbix_server_connectors | 0 | Version 6.4 or later |
 |StartDBSyncers | zabbix_server_startdbsyncers | 4 |  |
 |StartDiscoverers | zabbix_server_startdiscoverers | 1 |  |
 |StartEscalators | zabbix_server_startescalators | 1 |  |
-|StartHistoryPollers | zabbix_server_starthistorypollers | |  |
+|StartHistoryPollers | zabbix_server_starthistorypollers | 5 |  |
+|StartHTTPAgentPollers | zabbix_server_starthttpagentpollers | 1 | Version 7.0 or later |
 |StartHTTPPollers | zabbix_server_starthttppollers | 1 |  |
 |StartIPMIPollers | zabbix_server_startipmipollers | 0 |  |
 |StartJavaPollers | zabbix_server_startjavapollers | 0 |  |
-|StartLLDProcessors | zabbix_server_startlldprocessors | |  |
-|StartODBCPollers | zabbix_server_startodbcpollers | |  |
+|StartLLDProcessors | zabbix_server_startlldprocessors | 2 |  |
+|StartODBCPollers | zabbix_server_startodbcpollers | 1 |  |
 |StartPingers | zabbix_server_startpingers | 1 |  |
 |StartPollers | zabbix_server_startpollers | 5 |  |
 |StartPollersUnreachable | zabbix_server_startpollersunreachable | 1 |  |
-|StartPreprocessors | zabbix_server_startpreprocessors | |  |
-|StartProxyPollers | zabbix_server_startproxypollers | |  |
+|StartPreprocessors | zabbix_server_startpreprocessors | 3 |  |
+|StartProxyPollers | zabbix_server_startproxypollers | 1 |  |
 |StartReportWriters | zabbix_server_startreportwriters | 0 |  |
+|StartSNMPPollers | zabbix_server_startsnmppollers | 1  | Version 7.0 or later |
 |StartSNMPTrapper | zabbix_server_startsnmptrapper | 0 |  |
 |StartTimers | zabbix_server_starttimers | 1 |  |
 |StartTrappers | zabbix_server_starttrappers | 5 |  |
@@ -377,23 +385,25 @@ The following table lists all variables that are exposed to modify the configura
 |TLSKeyFile | zabbix_server_tlskeyfile | |  |
 |TmpDir | zabbix_server_tmpdir | /tmp |  |
 |TrapperTimeout | zabbix_server_trappertimeout | 300 |  |
-|TrendCacheSize | zabbix_server_trendcachesize | |  |
-|TrendFunctionCacheSize | zabbix_server_trendfunctioncachesize | |  |
+|TrendCacheSize | zabbix_server_trendcachesize | 4M |  |
+|TrendFunctionCacheSize | zabbix_server_trendfunctioncachesize | 4M |  |
 |UnavailableDelay | zabbix_server_unavailabledelay | 60 |  |
 |UnreachableDelay | zabbix_server_unreachabledelay | 15 |  |
 |UnreachablePeriod | zabbix_server_unreachableperiod | 45 |  |
 |User | zabbix_server_user | zabbix |  |
-|ValueCacheSize | zabbix_server_valuecachesize | |  |
+|ValueCacheSize | zabbix_server_valuecachesize | 8M |  |
 |Vault | zabbix_server_vault | | Version 6.2 or later  |
 |VaultDBPath | zabbix_server_vaultdbpath | |  |
-|VaultTLSKeyFile | zabbix_server_vaulttlskeyfile | | Version 6.2 or later |
-|VaultTLSCertFile | zabbix_server_vaulttlscertfile | | Version 6.2 or later |
+|VaultPrefix | zabbix_server_vaultdbprefix | | Version 7.0 or later |
+|VaultTLSCertFile | zabbix_server_vaulttlscertfile | | Version 6.4 or later |
+|VaultTLSKeyFile | zabbix_server_vaulttlskeyfile | | Version 6.4 or later |
 |VaultToken | zabbix_server_vaulttoken | |  |
 |VaultURL | zabbix_server_vaulturl | https://127.0.0.1:8200 |  |
 |VMwareCacheSize | zabbix_server_vmwarecachesize | |  |
 |VMwareFrequency | zabbix_server_vmwarefrequency | 60 |  |
 |VMwarePerfFrequency | zabbix_server_vmwareperffrequency | 60 |  |
 |VMwareTimeout | zabbix_server_vmwaretimeout | 10 |  |
+|WebDriverURL | zabbix_server_webdriverurl | | Version 7.0 or later |
 |WebServiceURL | zabbix_server_webserviceurl | |  |
 
 ## Tags

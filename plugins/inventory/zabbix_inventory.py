@@ -190,14 +190,12 @@ options:
         description:
             - Zabbix user name.
         type: str
-        required: true
         env:
           - name: ZABBIX_USERNAME
     login_password:
         description:
             - Zabbix user password.
         type: str
-        required: true
         env:
           - name: ZABBIX_PASSWORD
     auth_token:
@@ -205,7 +203,6 @@ options:
             - Zabbix authentication token (see https://www.zabbix.com/documentation/current/en/manual/web_interface/frontend_sections/users/api_tokens)
             - If provided then C(login_user) and C(login_password) are ignored
         type: str
-        required: false
     http_login_user:
         description:
             - Basic Auth login
@@ -298,6 +295,11 @@ server_url: https://zabbix.com
 auth_token: 3bc3dc85e13e2431812e7a32fa8341cbcf378e5101356c015fdf2e35fd511b06
 validate_certs: false
 
+#Using jinga2 template for auth token instead of username/password.
+plugin: community.zabbix.zabbix_inventory
+server_url: https://zabbix.com
+auth_token: "{{ lookup('ansible.builtin.env', 'ZABBIX_API_KEY') }}"
+validate_certs: false
 """
 
 from ansible.plugins.inventory import BaseInventoryPlugin, Constructable, Cacheable, to_safe_group_name
@@ -343,7 +345,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
             payload['params'] = params
 
         if self.auth != '':
-            if (LooseVersion(self.zabbix_version) >= LooseVersion('6.4')):
+            if (LooseVersion(self.zabbix_version) >= LooseVersion('7.0')):
                 headers['Authorization'] = 'Bearer ' + self.auth
             else:
                 payload['auth'] = self.auth
@@ -378,7 +380,7 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
         )
 
     def login_zabbix(self):
-        auth_token = self.get_option('auth_token')
+        auth_token = self._template_option('auth_token')
         if auth_token:
             self.auth = auth_token
             return
@@ -463,3 +465,8 @@ class InventoryModule(BaseInventoryPlugin, Constructable, Cacheable):
                         group_name = to_safe_group_name(group['name'])
                         self.inventory.add_group(group_name)
                         self.inventory.add_child(group_name, host_name)
+
+    def _template_option(self, option):
+        value = self.get_option(option)
+        self.templar.available_variables = {}
+        return self.templar.template(value)

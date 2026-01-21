@@ -1,6 +1,6 @@
 namespace: libredevops
 name: zabbix
-version: 2.3.1-a
+version: 4.1.1
 readme: README.md
 authors:
   - Dusan Matejka (@D3DeFi)
@@ -20,7 +20,7 @@ documentation: https://github.com/LibreDevOps/libredevops.zabbix.git
 homepage: https://github.com/LibreDevOps/libredevops.zabbix
 issues: https://github.com/LibreDevOps/libredevops.zabbix/issues
 dependencies:
-  ansible.windows: "*"
+  ansible.windows: ">=2.8.0"
   ansible.netcommon: ">=3.1.1"
   ansible.posix: "*"
   community.general: "*"
