@@ -31,8 +31,10 @@ See `defaults/main.yml` for more details.
 `zabbix_api_use_ssl`: use SSL for httpapi connection, `false` by default.
 `zabbix_api_validate_certs`: validate certs for httpapi connection, `false` by default.
 `zabbix_api_zabbix_url_path`: path to web directory or alias, `zabbix` by default.
-`zabbix_api_http_user`: login user, `Admin` by default.
-`zabbix_api_http_password`: login password, `zabbix` by default.
+`zabbix_api_login_user`: Username of user which has API access.
+`zabbix_api_login_pass`: Password for the user which has API access.
+`zabbix_api_http_user`: The http user to access zabbix url with Basic Auth (if your Zabbix is behind a proxy with HTTP Basic Auth).
+`zabbix_api_http_password`: The http password to access zabbix url with Basic Auth (if your Zabbix is behind a proxy with HTTP Basic Auth).
 `zabbix_api_auth_key`: API token for access. Not set by default.
 
 # Example Playbook
