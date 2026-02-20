@@ -201,3 +201,22 @@ zabbix_crud_actions: []
   #   state:
   #   status:
 
+zabbix_crud_user_directories: []
+  # # For details: https://docs.ansible.com/projects/ansible/latest/collections/community/zabbix/zabbix_user_directory_module.html#ansible-collections-community-zabbix-zabbix-user-directory-module
+  # - name:
+  #   state:
+  #   idp_type:
+  #   base_dn:
+  #   bind_dn:
+  #   bind_password:
+  #   host:
+  #   port:
+  #   search_attribute:
+
+zabbix_crud_auth_metods: []
+  # # For details: https://docs.ansible.com/projects/ansible/latest/collections/community/zabbix/zabbix_authentication_module.html#ansible-collections-community-zabbix-zabbix-authentication-module
+  # - authentication_type:
+  #   ldap_auth_enabled:
+  #   ldap_userdirectory:
+  #   ldap_case_sensitive:
+
